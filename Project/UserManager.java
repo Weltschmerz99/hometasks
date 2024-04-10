@@ -22,7 +22,7 @@ public class UserManager {
         if (user != null && user.getPassword().equals(password)) {
             return user;
         }
-        return null; // Пользователь не найден или неверный пароль
+        return null;
     }
 
     public List<Training> getAllTrainings() {

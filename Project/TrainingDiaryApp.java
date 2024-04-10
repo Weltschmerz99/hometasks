@@ -13,11 +13,9 @@ public class TrainingDiaryApp {
         this.currentUser = null;
         this.scanner = new Scanner(System.in);
         this.typeManager = new TrainingTypeManager();
-        // Добавляем начальные типы тренировок
         typeManager.addTrainingType("кардио", "Кардио-тренировки");
         typeManager.addTrainingType("силовая", "Силовые тренировки");
         typeManager.addTrainingType("йога", "Йога");
-        // Добавьте другие типы тренировок по необходимости
     }
 
     public void run() {
@@ -30,7 +28,7 @@ public class TrainingDiaryApp {
             System.out.println("3. Выход");
             System.out.print("Выберите действие: ");
             int choice = scanner.nextInt();
-            scanner.nextLine(); // очистка буфера
+            scanner.nextLine();
 
             switch (choice) {
                 case 1:
@@ -78,24 +76,22 @@ public class TrainingDiaryApp {
     private void userMenu(Scanner scanner) {
         boolean loggedIn = true;
         while (loggedIn) {
-            // Выводим заголовок меню
             System.out.println("╔════════════════════════════════════════════╗");
             System.out.println("║              Меню пользователя             ║");
             System.out.println("╠════════════════════════════════════════════╣");
             System.out.println("║ 1. Добавить тренировку                     ║");
             System.out.println("║ 2. Просмотреть тренировки                  ║");
             System.out.println("║ 3. Добавить пользовательский тип тренировки║");
-            System.out.println("║ 4. Отображение всех возможных тренировок   ║"); // Новый пункт меню
+            System.out.println("║ 4. Отображение всех типов тренировок       ║");
             System.out.println("║ 5. Редактировать тренировку                ║");
             System.out.println("║ 6. Удалить тренировку                      ║");
             System.out.println("║ 7. Получить статистику                     ║");
             System.out.println("║ 8. Выход                                   ║");
             System.out.println("╚════════════════════════════════════════════╝");
 
-            // Запрашиваем у пользователя действие
             System.out.print("Выберите действие: ");
             int choice = scanner.nextInt();
-            scanner.nextLine(); // очистка буфера
+            scanner.nextLine();
 
             switch (choice) {
                 case 1:
@@ -108,7 +104,7 @@ public class TrainingDiaryApp {
                     addCustomTrainingType(scanner);
                     break;
                 case 4:
-                    displayAllTrainingTypes(); // Новый метод для отображения всех типов тренировок
+                    displayAllTrainingTypes();
                     break;
                 case 5:
                     editTraining(scanner);
@@ -130,19 +126,108 @@ public class TrainingDiaryApp {
         }
     }
 
-    private String inputDate(Scanner scanner) {
-        String date = "";
-        boolean validDate = false;
-        while (!validDate) {
-            System.out.print("Введите дату тренировки (гггг-мм-дд): ");
-            date = scanner.nextLine();
-            if (isValidDate(date)) {
-                validDate = true;
-            } else {
-                System.out.println("Некорректная дата. Пожалуйста, введите дату в формате гггг-мм-дд и убедитесь, что она корректна.");
+    // Добавление тренировки
+    private void addTraining(Scanner scanner) {
+        System.out.print("Введите дату тренировки (гггг-мм-дд). Чтобы отменить операцию введите cancel: ");
+        String date = scanner.nextLine();
+
+        if (date.equalsIgnoreCase("cancel")) {
+            System.out.println("Отменено.");
+            return;
+        }
+
+        while (true) {
+            try {
+                if (!isValidDate(date)) {
+                    throw new IllegalArgumentException("Некорректный формат даты. Используйте гггг-мм-дд.");
+                }
+                break;
+            } catch (IllegalArgumentException e) {
+                System.out.println(e.getMessage());
+                System.out.print("Введите дату тренировки (гггг-мм-дд): ");
+                date = scanner.nextLine();
             }
         }
-        return date;
+
+        String typeName;
+        while (true) {
+            System.out.print("Введите тип тренировки: ");
+            typeName = scanner.nextLine();
+
+            if (typeName.equalsIgnoreCase("cancel")) {
+                System.out.println("Отменено.");
+                return;
+            }
+
+            if (!typeManager.getAllTypes().contains(typeName.toLowerCase())) {
+                System.out.println("Некорректный тип тренировки. Пожалуйста, выберите тип из списка:");
+                displayAllTrainingTypes();
+                continue;
+            }
+
+            if (currentUser.hasTrainingOnDate(date, typeName)) {
+                System.out.println("Тренировка данного типа на указанную дату уже существует.");
+                continue;
+            }
+            break;
+        }
+
+        int duration;
+        while (true) {
+            try {
+                System.out.print("Введите длительность тренировки (в минутах): ");
+                duration = Integer.parseInt(scanner.nextLine());
+
+                if (duration <= 0) {
+                    throw new IllegalArgumentException("Длительность тренировки должна быть положительным числом.");
+                }
+                break;
+            } catch (IllegalArgumentException e) {
+                System.out.println("Некорректный формат длительности тренировки. Введите целое положительное число.");
+            }
+        }
+
+        int calories;
+        while (true) {
+            try {
+                System.out.print("Введите количество потраченных калорий: ");
+                calories = Integer.parseInt(scanner.nextLine());
+
+                if (calories < 0) {
+                    throw new IllegalArgumentException("Количество потраченных калорий не может быть отрицательным числом.");
+                }
+                break;
+            } catch (IllegalArgumentException e) {
+                System.out.println("Некорректный формат количества потраченных калорий. Введите целое неотрицательное число.");
+            }
+        }
+
+        System.out.print("Введите дополнительную информацию: ");
+        String additionalInfo = scanner.nextLine();
+
+        currentUser.addTraining(new Training(date, typeManager.getTrainingType(typeName), duration, calories, additionalInfo, currentUser));
+
+        System.out.println("Тренировка добавлена успешно.");
+    }
+
+    // Отображение всех тренировок
+    private void viewTrainings() {
+        List<Training> trainings;
+        if (currentUser.isAdmin()) {
+            trainings = userManager.getAllTrainings();
+        } else {
+            trainings = currentUser.getTrainings();
+        }
+
+        if (trainings.isEmpty()) {
+            System.out.println("У вас еще нет тренировок.");
+        } else {
+            Collections.sort(trainings, Comparator.comparing(Training::getDate));
+            for (Training training : trainings) {
+                String ownerInfo = currentUser.isAdmin() ? " (пользователь: " + training.getOwner().getUsername() + ")" : "";
+                System.out.println(training + ownerInfo);
+            }
+        }
     }
 
     private boolean isValidDate(String date) {
@@ -186,100 +271,15 @@ public class TrainingDiaryApp {
         return value;
     }
 
-    private void addTraining(Scanner scanner) {
-        String date;
-        while (true) {
-            try {
-                System.out.print("Введите дату тренировки (гггг-мм-дд): ");
-                date = scanner.nextLine();
-                if (!isValidDate(date)) {
-                    throw new IllegalArgumentException("Некорректный формат даты. Используйте гггг-мм-дд.");
-                }
-                break; // Если дата валидна, выходим из цикла
-            } catch (IllegalArgumentException e) {
-                System.out.println(e.getMessage()); // Выводим сообщение об ошибке
-            }
-        }
-
-        String typeName;
-        while (true) {
-            System.out.print("Введите тип тренировки: ");
-            typeName = scanner.nextLine();
-            if (!typeManager.getAllTypes().contains(typeName.toLowerCase())) {
-                System.out.println("Некорректный тип тренировки. Пожалуйста, выберите тип из списка:");
-                displayAllTrainingTypes();
-                continue; // Продолжаем цикл, чтобы запросить у пользователя правильное название тренировки
-            }
-            // Проверка наличия тренировки данного типа на указанную дату
-            if (currentUser.hasTrainingOnDate(date, typeName)) {
-                System.out.println("Тренировка данного типа на указанную дату уже существует.");
-                continue; // Продолжаем цикл, чтобы запросить у пользователя другое название тренировки
-            }
-            break; // Если тип тренировки введен корректно, выходим из цикла
-        }
-
-        int duration;
-        while (true) {
-            try {
-                System.out.print("Введите длительность тренировки (в минутах): ");
-                duration = Integer.parseInt(scanner.nextLine());
-                if (duration <= 0) {
-                    throw new IllegalArgumentException("Длительность тренировки должна быть положительным числом.");
-                }
-                break; // Если длительность введена корректно, выходим из цикла
-            } catch (IllegalArgumentException e) {
-                System.out.println("Некорректный формат длительности тренировки. Введите целое положительное число.");
-            }
-        }
-
-        int calories;
-        while (true) {
-            try {
-                System.out.print("Введите количество потраченных калорий: ");
-                calories = Integer.parseInt(scanner.nextLine());
-                if (calories < 0) {
-                    throw new IllegalArgumentException("Количество потраченных калорий не может быть отрицательным числом.");
-                }
-                break; // Если количество калорий введено корректно, выходим из цикла
-            } catch (IllegalArgumentException e) {
-                System.out.println("Некорректный формат количества потраченных калорий. Введите целое неотрицательное число.");
-            }
-        }
-
-        System.out.print("Введите дополнительную информацию: ");
-        String additionalInfo = scanner.nextLine();
-
-        currentUser.addTraining(new Training(date, typeManager.getTrainingType(typeName), duration, calories, additionalInfo, currentUser));
-
-        System.out.println("Тренировка добавлена успешно.");
-    }
-
-
-
-    private void viewTrainings() {
-        List<Training> trainings;
-        if (currentUser.isAdmin()) {
-            // Администратор может видеть тренировки всех пользователей
-            trainings = userManager.getAllTrainings();
-        } else {
-            // Пользователь может видеть только свои тренировки
-            trainings = currentUser.getTrainings();
-        }
-
-        if (trainings.isEmpty()) {
-            System.out.println("У вас еще нет тренировок.");
-        } else {
-            Collections.sort(trainings, Comparator.comparing(Training::getDate));
-            for (Training training : trainings) {
-                String ownerInfo = currentUser.isAdmin() ? " (пользователь: " + training.getOwner().getUsername() + ")" : "";
-                System.out.println(training + ownerInfo);
-            }
-        }
-    }
-
+    // Редактирование
     private void editTraining(Scanner scanner) {
-        System.out.print("Введите дату тренировки (гггг-мм-дд): ");
+        System.out.print("Введите дату тренировки (гггг-мм-дд), или введите 'cancel', чтобы отменить операцию: ");
         String date = scanner.nextLine();
+
+        if (date.equalsIgnoreCase("cancel")) {
+            System.out.println("Отменено.");
+            return;
+        }
 
         List<Training> trainingsOnDate = currentUser.getTrainingsByDate(date);
 
@@ -423,9 +423,15 @@ public class TrainingDiaryApp {
         System.out.println("Дополнительная информация успешно изменена.");
     }
 
+    // Удаление
     private void deleteTraining(Scanner scanner) {
-        System.out.print("Введите дату тренировки (гггг-мм-дд): ");
+        System.out.print("Введите дату тренировки (гггг-мм-дд). Чтобы отменить операцию введите cancel: ");
         String date = scanner.nextLine();
+
+        if (date.equalsIgnoreCase("cancel")) {
+            System.out.println("Отменено.");
+            return;
+        }
 
         List<Training> trainingsOnDate = currentUser.getTrainingsByDate(date);
 
@@ -433,14 +439,19 @@ public class TrainingDiaryApp {
             System.out.println("На указанную дату нет тренировок.");
         } else {
             displayTrainings(trainingsOnDate);
-            int index = readIntFromUser(scanner, "Введите номер тренировки для удаления: ") - 1;
+            String input = scanner.nextLine();
+            if (input.equalsIgnoreCase("cancel")) {
+                System.out.println("Отменено.");
+                return;
+            }
+            int index;
+            try {
+                index = Integer.parseInt(input) - 1;
+            } catch (NumberFormatException e) {
+                System.out.println("Некорректный ввод номера тренировки.");
+                return;
+            }
             if (index >= 0 && index < trainingsOnDate.size()) {
-                System.out.println("Введите 'cancel', чтобы отменить удаление. Нажмите Enter, чтобы подтвердить удаление.");
-                String input = scanner.nextLine();
-                if (input.equalsIgnoreCase("cancel")) {
-                    System.out.println("Отменено.");
-                    return;
-                }
                 currentUser.deleteTraining(trainingsOnDate.get(index));
                 System.out.println("Тренировка успешно удалена.");
             } else {
@@ -449,6 +460,7 @@ public class TrainingDiaryApp {
         }
     }
 
+    // Статистика
     private void showStatistics() {
         List<Training> trainings = currentUser.getTrainings();
         int totalDuration = 0;
@@ -475,6 +487,7 @@ public class TrainingDiaryApp {
         }
     }
 
+    // Добавление пользовательских типов тренировок
     private void addCustomTrainingType(Scanner scanner) {
         System.out.print("Введите название нового типа тренировки: ");
         String name = scanner.nextLine();
@@ -484,6 +497,7 @@ public class TrainingDiaryApp {
         System.out.println("Новый тип тренировки добавлен успешно.");
     }
 
+    // Показ всех типов тренировок
     private void displayAllTrainingTypes() {
         System.out.println("Все доступные типы тренировок:");
         Set<String> allTrainingTypes = typeManager.getAllTypes();
@@ -493,6 +507,7 @@ public class TrainingDiaryApp {
         }
     }
 
+    // Показ всех тренировок на дату
     private void displayTrainings(List<Training> trainings) {
         System.out.println("Тренировки на указанную дату:");
         for (int i = 0; i < trainings.size(); i++) {

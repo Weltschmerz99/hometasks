@@ -1,8 +1,7 @@
 package Project;
 
 public class Training {
-    private User owner; // Добавляем поле owner
-
+    private User owner;
     private String date;
     private TrainingType type;
     private int durationMinutes;
@@ -34,10 +33,6 @@ public class Training {
         return caloriesBurned;
     }
 
-    public String getAdditionalInfo() {
-        return additionalInfo;
-    }
-
     public User getOwner() {
         return owner;
     }
@@ -60,10 +55,6 @@ public class Training {
 
     public void setAdditionalInfo(String additionalInfo) {
         this.additionalInfo = additionalInfo;
-    }
-
-    public void setOwner(User owner) {
-        this.owner = owner;
     }
 
     @Override
