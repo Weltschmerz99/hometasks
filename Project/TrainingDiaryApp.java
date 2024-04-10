@@ -4,9 +4,9 @@ import java.util.*;
 
 public class TrainingDiaryApp {
     private UserManager userManager;
-    private User currentUser;
+    User currentUser;
     private Scanner scanner;
-    private TrainingTypeManager typeManager;
+    TrainingTypeManager typeManager;
 
     public TrainingDiaryApp() {
         this.userManager = new UserManager();
@@ -46,7 +46,7 @@ public class TrainingDiaryApp {
         }
     }
 
-    private void registerUser(Scanner scanner) {
+    void registerUser(Scanner scanner) {
         System.out.print("Введите имя пользователя: ");
         String username = scanner.nextLine();
         System.out.print("Введите пароль: ");
@@ -59,7 +59,7 @@ public class TrainingDiaryApp {
     }
 
 
-    private void loginUser(Scanner scanner) {
+    void loginUser(Scanner scanner) {
         System.out.print("Введите имя пользователя: ");
         String username = scanner.nextLine();
         System.out.print("Введите пароль: ");
@@ -67,6 +67,7 @@ public class TrainingDiaryApp {
         currentUser = userManager.login(username, password);
         if (currentUser != null) {
             System.out.println("Вход выполнен успешно.");
+            UserActionLogger.logAction(username, "Logged in");
             userMenu(scanner);
         } else {
             System.out.println("Неверное имя пользователя или пароль.");
@@ -127,7 +128,7 @@ public class TrainingDiaryApp {
     }
 
     // Добавление тренировки
-    private void addTraining(Scanner scanner) {
+    void addTraining(Scanner scanner) {
         System.out.print("Введите дату тренировки (гггг-мм-дд). Чтобы отменить операцию введите cancel: ");
         String date = scanner.nextLine();
 
@@ -207,27 +208,9 @@ public class TrainingDiaryApp {
 
         currentUser.addTraining(new Training(date, typeManager.getTrainingType(typeName), duration, calories, additionalInfo, currentUser));
 
+        UserActionLogger.logAction(currentUser.getUsername(), "Added a training");
+
         System.out.println("Тренировка добавлена успешно.");
-    }
-
-    // Отображение всех тренировок
-    private void viewTrainings() {
-        List<Training> trainings;
-        if (currentUser.isAdmin()) {
-            trainings = userManager.getAllTrainings();
-        } else {
-            trainings = currentUser.getTrainings();
-        }
-
-        if (trainings.isEmpty()) {
-            System.out.println("У вас еще нет тренировок.");
-        } else {
-            Collections.sort(trainings, Comparator.comparing(Training::getDate));
-            for (Training training : trainings) {
-                String ownerInfo = currentUser.isAdmin() ? " (пользователь: " + training.getOwner().getUsername() + ")" : "";
-                System.out.println(training + ownerInfo);
-            }
-        }
     }
 
     private boolean isValidDate(String date) {
@@ -271,8 +254,29 @@ public class TrainingDiaryApp {
         return value;
     }
 
+    // Отображение всех тренировок
+    void viewTrainings() {
+        List<Training> trainings;
+        if (currentUser.isAdmin()) {
+            trainings = userManager.getAllTrainings();
+        } else {
+            trainings = currentUser.getTrainings();
+        }
+
+        if (trainings.isEmpty()) {
+            System.out.println("У вас еще нет тренировок.");
+        } else {
+            UserActionLogger.logAction(currentUser.getUsername(), "Viewed trainings");
+            Collections.sort(trainings, Comparator.comparing(Training::getDate));
+            for (Training training : trainings) {
+                String ownerInfo = currentUser.isAdmin() ? " (пользователь: " + training.getOwner().getUsername() + ")" : "";
+                System.out.println(training + ownerInfo);
+            }
+        }
+    }
+
     // Редактирование
-    private void editTraining(Scanner scanner) {
+    void editTraining(Scanner scanner) {
         System.out.print("Введите дату тренировки (гггг-мм-дд), или введите 'cancel', чтобы отменить операцию: ");
         String date = scanner.nextLine();
 
@@ -337,6 +341,7 @@ public class TrainingDiaryApp {
             return;
         }
         training.setDate(newDate);
+        UserActionLogger.logAction(currentUser.getUsername(), "Edited training date");
         System.out.println("Дата тренировки успешно изменена.");
     }
 
@@ -361,6 +366,7 @@ public class TrainingDiaryApp {
             break;
         }
         training.setType(typeManager.getTrainingType(typeName));
+        UserActionLogger.logAction(currentUser.getUsername(), "Edited training type");
         System.out.println("Тип тренировки успешно изменен.");
     }
 
@@ -385,6 +391,7 @@ public class TrainingDiaryApp {
             return;
         }
         training.setDurationMinutes(newDuration);
+        UserActionLogger.logAction(currentUser.getUsername(), "Edited training duration");
         System.out.println("Длительность тренировки успешно изменена.");
     }
 
@@ -409,6 +416,7 @@ public class TrainingDiaryApp {
             return;
         }
         training.setCaloriesBurned(newCalories);
+        UserActionLogger.logAction(currentUser.getUsername(), "Edited training calories");
         System.out.println("Количество потраченных калорий успешно изменено.");
     }
 
@@ -420,11 +428,12 @@ public class TrainingDiaryApp {
             return;
         }
         training.setAdditionalInfo(newInfo);
+        UserActionLogger.logAction(currentUser.getUsername(), "Edited training info");
         System.out.println("Дополнительная информация успешно изменена.");
     }
 
     // Удаление
-    private void deleteTraining(Scanner scanner) {
+    void deleteTraining(Scanner scanner) {
         System.out.print("Введите дату тренировки (гггг-мм-дд). Чтобы отменить операцию введите cancel: ");
         String date = scanner.nextLine();
 
@@ -453,6 +462,7 @@ public class TrainingDiaryApp {
             }
             if (index >= 0 && index < trainingsOnDate.size()) {
                 currentUser.deleteTraining(trainingsOnDate.get(index));
+                UserActionLogger.logAction(currentUser.getUsername(), "Deleted a training");
                 System.out.println("Тренировка успешно удалена.");
             } else {
                 System.out.println("Некорректный номер тренировки.");
@@ -476,6 +486,7 @@ public class TrainingDiaryApp {
             averageDuration = totalDuration / trainings.size();
             averageCaloriesBurned = (double) totalCaloriesBurned / trainings.size();
 
+            UserActionLogger.logAction(currentUser.getUsername(), "Viewed statistics");
             System.out.println("Статистика по тренировкам:");
             System.out.println("Всего тренировок: " + trainings.size());
             System.out.println("Общая продолжительность тренировок: " + totalDuration + " минут");
@@ -489,6 +500,7 @@ public class TrainingDiaryApp {
 
     // Добавление пользовательских типов тренировок
     private void addCustomTrainingType(Scanner scanner) {
+        UserActionLogger.logAction(currentUser.getUsername(), "Added a custom training type");
         System.out.print("Введите название нового типа тренировки: ");
         String name = scanner.nextLine();
         System.out.print("Введите описание нового типа тренировки: ");
